@@ -1,16 +1,31 @@
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 
 export class CdkNodeAppStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
+    // Create a VPC
+    const vpc = new ec2.Vpc(this, 'MyAppVPC', { maxAzs: 2 });
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'CdkNodeAppQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    // Create a ecs cluster
+    const cluster = new ecs.Cluster(this, 'MyAppEcsCluster', { vpc: vpc });
+
+    // Create a fargate service
+    const fargateService =
+      new ecsPatterns.ApplicationLoadBalancedFargateService(
+        this,
+        'MyAppFargateService',
+        {
+          cluster: cluster,
+          listenerPort: 3000,
+          taskImageOptions: {
+            image: ecs.ContainerImage.fromAsset(__dirname + './../node-app'),
+          },
+        }
+      );
   }
 }
